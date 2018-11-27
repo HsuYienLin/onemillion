@@ -1,0 +1,9 @@
+1.git的概括
+Git是目前世界上最先进的分布式版本控制系统
+能自动帮记录每次文件的改动，还可以让同事协作编辑
+2.git的诞生
+Git迅速成为最流行的分布式版本控制系统，尤其是2008年，GitHub网站上线了，它为开源项目免费提供Git存储，无数开源项目开始迁移至GitHub，包括jQuery，PHP，Ruby等等。
+3.集中式vs分布式
+4.安装git
+$ git config --global user.name "Your Name"
+$ git config --global user.email "email@example.com"
