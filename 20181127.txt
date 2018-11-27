@@ -75,6 +75,81 @@
 		On branch master
 		nothing to commit, working tree clean
 
+8.用git log命令查看历史纪录：
+	$ git log 可以加上某些参数
+
+9.把readme.txt回退到上一个版本
+	首先，Git必须知道当前版本是哪个版本，在Git中，用HEAD表示当前版本，上一个版本就是HEAD^，上上一个版本就是HEAD^^，往上100个版本写100个^比较容易数不过来，所以写成HEAD~100。
+	使用git reset命令：
+		$ git reset --hard HEAD^
+		HEAD is now at e475afc add distributed
+	只要上面的命令行窗口还没有被关掉，就可以顺着往上找，找到上一级的commit id，就可以指定回到未来的某个版本：
+		$ git reset --hard 1094a
+		HEAD is now at 83b0afe append GPL
+
+10.Git提供了一个命令git reflog用来记录你的每一次命令：
+	$ git reflog
+	e475afc HEAD@{1}: reset: moving to HEAD^
+	1094adb (HEAD -> master) HEAD@{2}: commit: append GPL
+	e475afc HEAD@{3}: commit: add distributed
+	eaadf4e HEAD@{4}: commit (initial): wrote a readme file
+
+11.工作区（Working Directory）：电脑上能看到的目录
+版本库（Repository）
+工作区有一个隐藏目录.git，这个不算工作区，而是Git的版本库。
+Git的版本库里存了很多东西，其中最重要的就是称为stage（或者叫index）的暂存区，还有Git为我们自动创建的第一个分支master，以及指向master的一个指针叫HEAD。
+git add命令实际上就是把要提交的所有修改放到暂存区（Stage），然后，执行git commit就可以一次性把暂存区的所有修改提交到分支。
+	$ git commit -m "understand how stage works"
+	[master e43a48b] understand how stage works
+ 	2 files changed, 2 insertions(+)
+ 	create mode 100644 LICENSE
+ 	未对工作区进行修改
+ 	$ git status
+	On branch master
+	nothing to commit, working tree clean
+
+12.管理修改
+提交第二次修改，可以继续git add再git commit，也可以别着急提交第一次修改，先git add第二次修改，再git commit，就相当于把两次修改合并后一块提交了：
+第一次修改 -> git add -> 第二次修改 -> git add -> git commit
+
+12.撤销修改
+git checkout -- file可以丢弃工作区的修改：
+	$ git checkout -- readme.txt
+	上面的命令把readme.txt文件在工作区的修改全部撤销，这里有两种情况：
+		一种是readme.txt自修改后还没有被放到暂存区，现在，撤销修改就回到和版本库一模一样的状态；
+		一种是readme.txt已经添加到暂存区后，又作了修改，现在，撤销修改就回到添加到暂存区后的状态。
+	命令中的“--”很重要，没有“--”，就变成了“切换到另一个分支”的命令
+用命令git reset HEAD <file>可以把暂存区的修改撤销掉（unstage），重新放回工作区：
+	$ git reset HEAD readme.txt
+	Unstaged changes after reset:
+	M    readme.txt
+
+13.删除文件
+添加一个新文件test.txt到Git并且提交：
+	$ git add test.txt
+	$ git commit -m "add test.txt"
+一般情况下，通常直接在文件管理器中把没用的文件删了，或者用rm命令删了：
+	$ rm test.txt
+这个时候，Git知道你删除了文件，因此，工作区和版本库就不一致了，git status命令会立刻告诉你哪些文件被删除了：
+	$ git status
+	现在你有两个选择，一是确实要从版本库中删除该文件，那就用命令git rm删掉，并且git commit：
+		$ git rm test.txt
+	另一种情况是删错了，因为版本库里还有呢，所以可以很轻松地把误删的文件恢复到最新版本：
+		$ git checkout -- test.txt	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
