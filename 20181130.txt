@@ -1,0 +1,123 @@
+1.运行rails new生成一个新程序
+bogon:~ Hsuyl$ mkdir rails_projects
+bogon:~ Hsuyl$ cd rails_projects
+bogon:rails_projects Hsuyl$ rails new first_app
+
+2。打开gemfile文件
+bogon:rails_projects Hsuyl$ cd first_app/
+bogon:first_app Hsuyl$ subl gemfile
+
+3.更新bundle
+$ bundle update
+$ bundle install
+
+4.在开发电脑上运行一个本地服务器：
+$ rails server
+系统提示缺少js时，下载一个node.js就好了
+反应
+	=> Booting Puma
+	=> Rails 5.1.6 application starting in development 
+	=> Run `rails server -h` for more startup options
+	Puma starting in single mode...
+	* Version 3.12.0 (ruby 2.2.6-p396), codename: Llamas in 	Pajamas
+	* Min threads: 5, max threads: 5
+	* Environment: development
+	* Listening on tcp://0.0.0.0:3000
+	Use Ctrl-C to stop
+上述代码告诉我们这个程序在0.0.0.0地址的3000端口运行，这个地址告诉系统监听这台电脑上的每一个可用的IP地址，可以通过127.0.0.1或者localhost查看程序
+
+5.打开git初始化一个新仓库
+git init
+在应用程序的根目录创建一个名为.gitignore的文件，然后写入一些规则告诉git要忽略哪一些文件
+修改
+# Ignore all logfiles and tempfiles.
+/log/*.log
+/tmp
+
+# Ignore other unneeded files.
+doc/
+*.swp
+*~
+.project
+.DS_Store
+.idea
+下一步git add .
+git commit
+退出git log用q
+然后git remote
+git push添加到GitHub上
+—————————————————————————————————————————————————————————
+tips：如何找到隐藏的gitignore文件
+ 1）打开git项目文件夹
+ 2）打开terminal
+ 3）输入defaults write com.apple.finder AppleShowAllFiles -bool true
+ 4）按下option+command+esc 重新开启 finder
+—————————————————————————————————————————————————————————
+
+6.如果不小心删除了app/controllers/文件夹：
+	$ ls app/controllers/
+	application_controller.rb
+	$ rm -rf app/controllers/
+	$ ls app/controllers/
+	ls: app/controllers/: No such file or directory    
+用git status查看改动只发生在工作区，还没有提交，可以用checkout撤销
+	$ git checkout -f
+	$ git status
+	# On branch master
+	nothing to commit (working directory clean) 
+	$ ls app/	controllers/ application_controller.rb 
+
+7.分支
+用checkout，指定-b旗标创建一个新分支：
+	$ git checkout -b modify-README
+	Switched to a new branch 'modify-README'
+	$ git branch
+	master
+	* modify-README
+第一个命令会创建一个新的分支，然后切换到这个分支，第二个命令会将本地所有的分支列出来
+
+8.编辑
+mv-移动 move 修改文件名
+	$ git mv README.rdoc README.md
+	$ subl README.md
+修改readme.md的文件
+	# Ruby on Rails Tutorial: first application
+	This is the first application for the
+	[*Ruby on Rails Tutorial*](http://railstutorial.org/)
+	by [Michael Hartl](http://michaelhartl.com/).
+然后git commit -a -m "Improve the README file"
+
+9.合并到主分支
+	$ git checkout master
+	$ git merge modify-README
+清理分支用git branch -d 删除这个从分支
+	$ git branch -d modify-README
+使用 git branch -D  放弃对从分支所做的修改
+	$ git checkout -b topic-branch
+	$ <really screw up the branch>
+	$ git add .
+	$ git commit -a -m "Major screw up"
+	$ git checkout master
+	$ git branch -D topic-branch   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
