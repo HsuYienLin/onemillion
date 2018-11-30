@@ -101,9 +101,20 @@ mv-移动 move 修改文件名
 	$ git branch -D topic-branch   
 
 
+——————————————————————————————————————————————————————
+rail s -p 3009
+自定义本地网站运行的端口
 
+CRUD 增删改查
+C create
+R read 
+U update 
+D delete 
 
-
+MVC 
+m model 与数据库打交道
+v view  展示层（html,css,js)
+c controller 控制层 控制器 处理业务逻辑
 
 
 

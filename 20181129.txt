@@ -30,7 +30,8 @@ gem install rails
 
 9.安装ruby gem
   ruby setup.rb
- 
+
+
 
 
 
