@@ -116,6 +116,75 @@ m model 与数据库打交道
 v view  展示层（html,css,js)
 c controller 控制层 控制器 处理业务逻辑
 
+________________________________________________________
+1.在 Application 控制器中添加 hello 动作
+app/controllers/application_controller.rb
+class ApplicationController < ActionController::Base
+  protect_from_forgery with: :exception
+
+  def hello
+    render html: "hello, world!"
+  end
+end
+
+2.设置根路由
+config/routes.rb
+Rails.application.routes.draw do
+  root 'application#hello'
+end
+
+3.users 资源
+把 scaffold 传给 rails generate 命令就可以使用 Rails 的脚手架了。传给 scaffold 的参数是资源名的单数形式（这里是 User）后面可以再跟着一些可选参数，指定数据模型中的字段：
+	$ rails generate scaffold User name:string email:string
+
+4.用 rails db:migrate 命令迁移（migrate）数据库
+	$ rails db:migrate
+
+运行本地 Web 服务器：
+	$ rails server
+
+
+mvc
+浏览器向 /users 发送请求；
+
+Rails 的路由把 /users 交给 Users 控制器的 index 动作处理；
+
+index 动作要求 User 模型检索所有用户（User.all）；
+
+User 模型从数据库中读取所有用户；
+
+User 模型把所有用户组成的列表返回给控制器；
+
+控制器把所有用户赋值给 @users 变量，然后传入 index 视图；
+
+视图使用嵌入式 Ruby 把页面渲染成 HTML；
+
+控制器把 HTML 送回浏览器。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
