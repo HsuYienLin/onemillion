@@ -1,0 +1,28 @@
+1.传入“StaticPages”得到的文件是 static_pages_controller.rb
+可以用蛇底式：
+$ rails generate controller static_pages ...
+
+2.撤销操作
+$ rails generate controller StaticPages home help
+$ rails destroy  controller StaticPages home help
+两者相互抵消
+
+3.命令生产模型
+$ rails generate model User name:string email:string
+命令撤销：
+$ rails destroy model User
+
+4.迁移通过下面的命令改变数据库的状态：
+$ rails db:migrate
+撤销前一个迁移操作：
+$ rails db:rollback
+如果要回到最开始的状态，可以使用：
+$ rails db:migrate VERSION=0
+
+5.get 规则
+
+6.添加about路由red
+get 'static_pages_about_url'
+
+7.<% provide(:title, 'Home') %>
+通过 <% …​ %> 调用 Rails 提供的 provide 函数，把字符串 "Home" 赋给 :title。[12]然后，在标题中，我们使用类似的符号 <%= …​ %>，通过 Ruby 的 yield 函数把标题插入模板中
