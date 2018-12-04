@@ -1,0 +1,81 @@
+1.清单文件
+应用的CSS清单文件
+app/assets/stylesheets/application.css
+	*= require_tree .
+会把app/assets/stylesheets
+目录中的所有CSS文件（包含子目录中的文件）都引入应用的 CSS 文件。
+	*= require_self
+会把 application.css 这个文件中的 CSS 也加载进来。
+
+2.预处理器引擎
+通过扩展名告诉 Rails 使用哪个预处理器。三个最常用的扩展名是：Sass 文件的 .scss，CoffeeScript 文件的 .coffee，ERb 文件的 .erb。
+
+3.嵌套
+	.center {
+  	text-align: center;
+	}
+
+.center h1 {
+  margin-bottom: 10px;
+}
+使用 Sass 可将其改写成
+	.center {
+  	text-align: center;
+  	h1 {
+    	margin-bottom: 10px;
+  	}
+	}
+
+
+#logo {
+}
+#logo:hover {
+}
+在scss中
+#logo {
+  &:hover {
+  }
+}
+
+4.变量
+#777 是淡灰色，我们可以把它定义成一个变量：
+	$light-gray: #777;
+h2 {
+  .
+  .
+  .
+  color: $light-gray;
+}
+.
+.
+.
+footer {
+  .
+  .
+  .
+  color: $light-gray;
+}
+
+5.布局中链接的测试
+$ rails generate integration_test site_layout
+
+=》6.2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
