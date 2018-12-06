@@ -1,0 +1,31 @@
+1.大多数迁移，包括本书中的所有迁移，都是可逆的，也就是说可以使用一个简单的命令“向下迁移”，撤销之前的操作。这个命令是
+	$ rails db:rollback
+
+2.用户有安全的密码
+在 User 模型中添加 has_secure_password 方法
+has_secure_password
+
+3.测试密码的最短长度
+	test "password should be present (nonblank)" do
+    @user.password = @user.password_confirmation = " " * 6
+    assert_not @user.valid?
+  end
+
+  test "password should have a minimum length" do
+    @user.password = @user.password_confirmation = "a" * 5
+    assert_not @user.valid?
+  end
+
+4.使用迁移可以修改应用的数据模型；
+
+Active Record 提供了很多创建和处理数据模型的方法；
+
+使用 Active Record 验证可以在模型的数据上添加约束条件；
+
+常见的验证有存在性、长度和格式；
+
+正则表达式晦涩难懂，但功能强大；
+
+数据库索引可以提升查询效率，而且能在数据库层实现唯一性约束；
+
+可以使用内置的 has_secure_password 方法在模型中添加一个安全的密码。
