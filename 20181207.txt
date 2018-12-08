@@ -1,0 +1,4 @@
+1.使用 params 获取用户的 ID
+	@user = User.find(params[:id])
+当我们向 Users 控制器发送请求时，params[:id] 会返回用户的 ID，即 1
+

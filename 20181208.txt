@@ -1,0 +1,18 @@
+time log
+1.Devided in 3 parts for daily, weekly, monthly
+daily consists of To Do List & Class Schedule
+weekly schedule could help remind of what to do next day 
+monthly could scan the important date in this month
+
+2.summery
+also devided into 3 parts
+daily weekly & monthly
+about achivement rewiew loss
+
+3.plan
+such as Fitting Plan, DeadWeek Plan, Project Plan
+section: sign in(punch the clock)
+
+study plan set according to Ebbinghaus Forgetting Curve
+
+tips:I think a Time Log app could not be so garish and too multiple or users could concentrate on what he/she is doing right there
