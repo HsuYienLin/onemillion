@@ -1,0 +1,53 @@
+1.rails s可以与其子命令rails g同时执行（在一个新窗口中）
+
+2.rails g controller welcome index
+在controller下创建文件
+views里的index.html.erb
+
+3.config/routes.rb文件中root’’ 指向不同controller and action
+root‘welcome#index’ 中的welcome指当前controller index指当前解析方法
+
+4.Agile Development敏捷开发
+包含philosophy DRY Ecosystem：Gems/Community
+快速迭代
+	创意／想法 -》线上 -》修改 -》线下 -》下次迭代
+
+5.从本地开发到线上
+ development environment ：development ／ test ／ production ／ staging
+ 其中test用一些假数据来进行测试
+ staging属于自定义新加的板块 模拟production
+ configuration & deployment 配置部署
+
+6.pages & assets
+dynamic pages 动态页面 ：routes 路由功能 ／ restful ／ inheritance 继承机制
+	routes{HTTP GET/ POET / PUT / DELETE
+			Custom routes
+			Easy to refactor
+	filter过滤器{ before_filter前置过滤器
+				 aroud_filter
+				 after_filter
+	cache 缓存{ page cache 页面缓存
+				fragment cache 片段缓存
+	response 请求{ HTML
+				  JSON       此三种为主流格式
+				  XML
+				  etc.
+
+assets：asset pipeline 资源管理的管道 ／ minify ／ combine ／ webpack ／ babel etc.                                                
+
+7.active record
+powerful orm { User.find (2) 查找id
+			   User.find_by (email:' ') 查找制定语句
+			   User.where
+			   User.blogs 两张表的关联查询 
+
+triggers 触发器{ before_save
+				after_save
+				after_destroy
+				after_create
+				etc.
+
+
+
+
+
