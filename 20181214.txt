@@ -1,0 +1,79 @@
+1. mkdir app/views/shared
+新建一个shared目录
+
+2.在文件app/assets/stylesheets/custom.scss中添加
+/* forms */
+.
+.
+.
+#error_explanation {
+  color: red;
+  ul {
+    color: red;
+    margin: 0 0 30px 0;
+  }
+}
+
+.field_with_errors {
+  @extend .has-error;
+  .form-control {
+    color: $state-danger-text;
+  }
+}
+提交无效信息后会提示错误信息
+
+7.3.4
+1.为用户注册功能生成一个集成测试文件，这个文件名为 users_signup（沿用复数命名资源的约定）：
+	rails generate integration_test users_signup
+
+2.使用get方法访问注册页面：
+	get signup_path
+
+3.为了测试表单提交后的状态，我们要向 users_path 发送 POST 请求，这个操作可以使用 post 方法完成：
+	assert_no_difference 'User.count' do
+  post users_path, params: { user: { name:  "",
+                                     email: "user@invalid",
+                                     password:              "foo",
+                                     password_confirmation: "bar" } }
+	end
+
+用到了 create 动作中传给 User.new 的 params[:user] 散列，rails5.0废除了这种做法
+
+7.23test/integration/users_signup_test.rb 注册失败的厕所 green
+	require 'test_helper'
+
+class UsersSignupTest < ActionDispatch::IntegrationTest
+
+  test "invalid signup information" do
+    get signup_path
+    assert_no_difference 'User.count' do
+      post users_path,  params: { user: { name:  "",
+                                  email: "user@invalid",
+                                  password:              "foo",
+                                  password_confirmation: "bar" } }
+    end
+    assert_template 'users/new'
+  end
+end
+
+rails test
+
+
+7.24test/integration/users_signup_test.rb 错误消息测试模版
+	增加两行assert_select 'div#<CSS id for error explanation>'
+    assert_select 'div.<CSS class for field with error>'
+
+7.26config/routes.rb
+ 添加响应post请求的signup路由
+  post '/signup',  to: 'users#create'
+
+7.27 app/views/users/new.html.erb
+把表单提交给／signup
+	在class="col-md-6 col-md-offset-3"中添加
+	<%= form_for(@user, url: signup_path) do |f| %>
+
+
+
+
+
+
