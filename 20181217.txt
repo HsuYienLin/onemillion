@@ -1,0 +1,88 @@
+7.27app/views/users/new.html.erb
+添加一行 <%= form_for(@user, url: signup_path) do |f| %>
+在class="col-md-6 col-md-offset-3"中 把表单提交给／signup
+
+7.28app/controllers/users_controller.rb
+    if @user.save中添加
+      redirect_to @user
+
+create 动作的代码，处理保存和重定向操作
+也可以写成redirect_to user_url(@user)
+
+7.29 app/controllers/users_controller.rb
+  同上添加flash[:success] = "Welcome to the Sample App!"
+  用户注册成功后显示的一个闪现消息
+
+7.30 在控制台中迭代flash 散列
+$rails console
+>>flash = { success: "It worked!", danger: "It failed." }
+
+>>flash.each do |key, value|
+?>   puts "#{key}"
+?>   puts "#{value}"
+
+ctrl+d退出
+
+
+7.31app/views/layouts/application.html.erb
+在网站的布局中添加flash变量的内容
+<div class="container">
+      <% flash.each do |message_type, message| %>
+        <div class="alert alert-<%= message_type %>"><%= message %></div>
+      <% end %>
+
+
+还原数据库rails db:migrate:reset
+
+7.32在数据库中查找我们刚刚创建的用户
+$ rails console
+>> User.find_by(email: "example@railstutorial.org")
+=> #<User id: 1, name: "Rails Tutorial", email: "example@railstutorial.
+org", created_at: "2016-05-31 17:17:33", updated_at: "2016-05-31 17:17:33",
+password_digest: "$2a$10$8MaeHdnOhZvMk3GmFdmpPOeG6a7u7/k2Z9TMjOanC9G...">
+
+7.33 注册成功测试 integration／users_test.rb
+require 'test_helper'
+
+class UsersSignupTest < ActionDispatch::IntegrationTest
+  .
+  .
+  .
+  test "valid signup information" do
+    get signup_path
+    assert_difference 'User.count', 1 do
+      post users_path, params: { user: { name:  "Example User",
+                                         email: "user@example.com",
+                                         password:              "password",
+                                         password_confirmation: "password" } }
+    end
+    follow_redirect!
+    assert_template 'users/show'
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
