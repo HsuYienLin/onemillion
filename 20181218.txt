@@ -1,0 +1,354 @@
+ruby变量
+本地变量 local variable    => name = "itercast"
+实例变量 instance variable => @age = 29 (@符)
+全局变量 global variable   => $app_path = "usr/local/"
+常量     constant          =>VERSION = "v1.0"
+
+ruby data types
+string 字符串 => string_name = "intercast"
+number 数字   => num_age = 29
+fixnum bignum很大的数字 float小数点
+abs调用绝对值
+array  数组   => array_score = [32,53,12,56]
+boolean布尔型 => boolean_is_pass = true 实际上ruby没有
+hashes 三列表 => hash_user = {:name => "nash_su", :age => 29}
+symbols 符号  => :name
+
+1.>>name="itercast"
+=>"itercast"
+>>name  输入变量名
+=>"itercast"
+
+2.>>num=100
+=>100
+>>num
+=>100
+
+3.>>score = [323,434,1432]
+=>[323,434,1432]
+>>score
+=>[323,434,1432]
+>>score[0]
+=>323
+>>score[1]
+=>434
+
+创建一个空白数组
+>>score = []
+=>[]
+
+4.布尔
+>>is_pass = true
+=>true
+>>is_pass = false
+=>false
+
+5.哈希通常使用 ：开头符号型
+>>user = {:name =>"nash_su", age => 29, :sex =>"male"}
+=>{:name =>"nash_su", age => 29, :sex =>"male"}
+>>user
+=>{:name =>"nash_su", age => 29, :sex =>"male"}
+>>user[:age]
+=>29
+
+6.>>:name
+=>:name
+保存不变化的字符串，用于节省资源
+
+?>"name"
+=>"name"
+>>"name".objesct_id
+=>2209554240
+>>"name".objesct_id  string型会变化创建了一个新的字符串
+=>2209554220
+>>"name".objesct_id
+=>2209554200
+>>:name.objesct_id
+=>68828
+>>:name.objesct_id  symbol型不会变化
+=>68828
+>>:name.objesct_id
+=>68828
+
+
+ruby中一切都是对象，所有的变量也都是对象
+查看变量对象类型: 变量名.class
+调用对象的方法: 变量名.方法名
+
+name = "itercast"      字符串
+name.class
+name.length            字符串长度
+name.reverse.upcase    字符串变成大写
+
+
+保持良好的命名习惯
+name = "itercast"
+age = 12
+exam_score = [32,12]
+
+exam_score.sort      排列后，原来的内容不变
+exam_score.sort!     修改原始变量内容
+一般地，ruby中方法名称以“！”结尾的，都是直接修改原始变量的
+
+在字符串中，可以通过#{变量名}引用变量的内容
+puts "hello #{name}!"
+只能用在双引号中
+
+表达式
+=      赋值
+==     比较是否一样        返回true或false       等号左右两边的字符／数字
+>,<    大于或小于          返回true或false
+>=,<=  小于等于货大于等于   返回true或false
+<=>    船型操作符          返回-1/0/1
+	3<=>5  返回值-1
+
+
+可以使用&& 或者|| 进行表达式组合（逻辑运输）
+&& 逻辑与
+|| 逻辑或
+!  逻辑非
+
+a && b 左右都为true则true                    	a and b
+a || b 左右有一个／两个为true，则为true        a or b
+！(a == b) 结果取反                          not(a == b)
+
+
+1 < 0 && 4 > 3
+false
+-1 < 0 && 4 > 3
+true
+
+2 > 3 || "ruby" = "ruby"
+true
+至少有一个为真，结果都为真
+
+3 > 4
+false
+!(3 > 4)
+true
+
+条件判断
+当判定条件为 非false 时执行特定语句
+
+if 条件判断语句
+ ......
+end 
+
+if 条件判断语句
+ ......          真 只执行此代码
+else
+ ......          假 只执行此行
+end 
+
+if 条件判断语句
+ ......
+elsif
+ ......
+else
+ ......
+end 
+
+ruby中除了false和nil外，都被认为是true
+
+当判定条件为false时执行特定语句
+unless 条件判断语句
+ ......
+end
+
+
+unless 条件判断语句
+ ......          
+else
+ ......          
+end 
+
+ruby中，false和nil都被认为是false
+
+eg1
+if 1 == 1
+   putrs "1 == 1"
+end
+
+eg2
+score = 70
+
+if score >= 60
+   puts "Pass!"
+else
+   puts "Try again"
+end
+
+
+if score < 60
+   puts "try again"
+elsif score >= 80
+   puts "good job"
+else
+   puts "pass"
+end 
+
+eg3
+unless 1 > 2
+ puts "1 < 2"
+end
+
+
+
+匹配特定内容case
+day = "monday"
+case day
+when "monday"
+ puts "fighting"
+when "wednesday"
+ puts "where is friday"
+when "friday"
+ puts "yes"
+end
+
+score = 99
+case score
+when 1..59
+ puts "try again"
+when 60..79
+ puts "pass"
+when 80..100
+ puts "good"
+end
+
+循环、迭代器
+1.无尽循环
+loop do
+  ......
+end
+
+loop do
+  puts "nonono"
+end
+
+无尽的执行下去，除非加入break判断语句
+count = 0
+loop do
+  puts "nonono"
+
+  count +=1
+  if count >10      中断条件
+     break 
+  end
+
+  end
+
+2.条件循环
+while ：当条件为true时循环执行
+until ：       false
+
+count = 0
+while count < 10
+ puts "noono"
+ count += 1
+end
+
+count = 10
+until count < 1
+ puts "noono"
+ count -= 1
+end
+
+以上两者执行效果一样
+
+3.迭代器
+count = 0
+while count < 10
+ puts "noono"
+ count += 1
+end
+
+可改写为
+10.times do
+ put "noono"
+end
+可读性更高（times）
+
+1.upto(10) do |count|
+ put "count to #{count}"
+end
+
+10.downto(1) do |count|
+ put "down to #{count}"
+end
+
+1.step(10,2) do |count|
+ put "step to #{count}"
+end
+(1,3,5,7,9)
+
+method 方法
+1.方法通过组合特定代码实现可重复执行的特定功能
+def 方法名
+    ......
+end
+
+eg
+def say_hi
+    puts"hello"
+end
+方法名称必须以小写开头
+
+
+
+def 方法名（参数列表）
+    ......
+end
+
+def say_hi(name)
+    puts"hello #{name}"
+end
+
+def say_hi(name,from)
+    puts"hello #{name}, from #{from}"
+end
+
+2.变长参数会被自动转变为以参数名命名的数组
+def 方法名（*arg）          在参数前加*
+    ......
+end
+
+eg
+def add_all(*arg)
+  sum = 0
+  num.each {|x| sum += x}
+  return sum
+end
+
+3.可以为参数指定默认值
+def 方法名（arg1=默认值...）         
+    ......
+end
+
+eg
+def say_hi(name="abc")
+    puts"hello #{name}"
+end
+打印出 hello abc
+
+4.每一个方法都有一个返回值
+def add_all(*arg)
+  sum = 0
+  num.each {|x| sum += x}
+  return sum                   return为显示返回
+end
+没有通过return指定返回对象时，自动返回最后一行代码的返回结果
+
+def do_nothing
+end
+
+puts do_nothing.class
+当方法是空的时候，依然会返回nil对象
+
+
+
+
+
+
+
+
+
