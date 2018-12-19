@@ -1,0 +1,136 @@
+7.34test/integration/users_signup_test.rb
+添加一个assert_not flash.FILL_IN 闪现消息测试的模版
+
+7.35app/views/layouts/application.html.erb
+使用content_tag编写网站布局中的闪现消息
+	<% flash.each do |message_type, message| %>
+    <%= content_tag(:div, message, class: "alert alert-#{message_type}") %>
+  <% end %>
+
+在生产环境中使用ssl
+7.36config/environments/production.rb
+ 	# Force all access to the app over SSL, use Strict-Transport-Security,
+  # and use secure cookies.
+  config.force_ssl = true
+然后在远程服务器中设置ssl
+
+生产环境中web服务器
+7.37 生产环境所用web服务器的配置文件config/puma.rb
+workers Integer(ENV['WEB_CONCURRENCY'] || 2)
+threads_count = Integer(ENV['RAILS_MAX_THREADS'] || 5)
+threads threads_count, threads_count
+
+preload_app!
+
+rackup      DefaultRackup
+port        ENV['PORT']     || 3000
+environment ENV['RACK_ENV'] || 'development'
+
+on_worker_boot do
+  # 专门针对 Rails 4.1+ 的职程设置
+  # 参见：https://devcenter.heroku.com/articles/
+  # deploying-rails-applications-with-the-puma-web-server#on-worker-boot
+  ActiveRecord::Base.establish_connection
+end
+
+最后新建一个procfile文件 放在根目录下./Procfile  
+web: bundle exec puma -C config/puma.rb
+
+然后部署到生产环境
+$ rails test
+$ git add -A
+$ git commit -m "Use SSL and the Puma webserver in production"
+$ git push
+$ git push heroku
+$ heroku run rails db:migrate
+在浏览器中会出现有ssl锁状图和https
+
+本章
+Rails 通过 debug 方法显示一些有用的调试信息；
+
+Sass 混入定义一组 CSS 规则，可以多次使用；
+
+Rails 默认提供了三个标准环境：开发环境、测试环境和生产环境；
+
+可以通过一组标准的 REST URL 与 Users 资源交互；
+
+Gravatar 提供了一种简便的方法显示用户的头像；
+
+form_for 辅助方法用于创建与 Active Record 对象交互的表单；
+
+注册失败后渲染注册页面，而且会显示由 Active Record 自动生成的错误消息；
+
+Rails 提供了 flash 作为显示临时消息的标准方式；
+
+注册成功后会在数据库中创建一个用户记录，而且会重定向到用户资料页面，并显示一个欢迎消息；
+
+可以使用集成测试检查表单提交的行为，并能捕获回归；
+
+可以配置应用在生产环境中使用 SSL 加密通信，还可以使用 Puma 提升性能。
+
+
+—————————————————————————我是分割线————————————————————————————————————————
+
+会话session 用户登录的应用必须使用会话——两台电脑之间的半永久性连接
+（http协议无法在两个页面之间记住用户身份）
+rails中用cookie（存储在用户浏览器中的少量文本）实现会话
+
+把会话看成 REST 式资源便于操作，访问登录页面时渲染一个用于创建会话的表单，登录时创建会话，退出时再把会话销毁。不过，会话和 Users 资源不同，Users 资源（通过 User 模型）使用数据库存储数据，而会话使用 cookie。所以，登录功能的大部分工作是实现基于 cookie 的身份验证机制。
+
+在分支中工作$ git checkout -b basic-login
+
+8.1登陆和退出由session控制器中的REST处理动作，登录表单在动作new中处理
+登陆-向create动作发送POST请求
+退出-向destroy动作发送DELETE请求
+
+生成sessions控制器
+$ rails generate controller Sessions new
+
+Users 资源使用特殊的 resources 方法自动获得 REST 式路由，而 Sessions 资源则只能使用具名路由，处理发给 /login 地址的 GET 和 POST 请求，以及发给 /logout 地址的 DELETE 请求
+
+8.2添加一个资源，获得会话的标准REST动作
+在config/routes.rb中添加
+	get    '/login',   to: 'sessions#new'
+  post   '/login',   to: 'sessions#create'
+  delete '/logout',  to: 'sessions#destroy'
+
+8.3更新sessions控制器的测试，使用心得登陆路由
+在test/controllers/sessions_controller_test.rb中添加
+	test "should get new" do
+    get login_path               <------
+    assert_response :success
+  end
+
+执行rails routes命令生成路由列表
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
