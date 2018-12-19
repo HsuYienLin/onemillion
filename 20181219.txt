@@ -103,7 +103,70 @@ Users 资源使用特殊的 resources 方法自动获得 REST 式路由，而 Se
 
 执行rails routes命令生成路由列表
 
+8.4登录表单的代码
+app/views/sessions/new.html.erb
+<% provide(:title, "Log in") %>
+<h1>Log in</h1>
 
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <%= form_for(:session, url: login_path) do |f| %>
+
+      <%= f.label :email %>
+      <%= f.email_field :email, class: 'form-control' %>
+
+      <%= f.label :password %>
+      <%= f.password_field :password, class: 'form-control' %>
+
+      <%= f.submit "Log in", class: "btn btn-primary" %>
+    <% end %>
+
+    <p>New user? <%= link_to "Sign up now!", signup_path %></p>
+  </div>
+</div>
+
+8.5 8.4中的登录表单生成html
+<form accept-charset="UTF-8" action="/login" method="post">
+  <input name="utf8" type="hidden" value="&#x2713;" />
+  <input name="authenticity_token" type="hidden"
+         value="NNb6+J/j46LcrgYUC60wQ2titMuJQ5lLqyAbnbAUkdo=" />
+  <label for="session_email">Email</label>
+  <input class="form-control" id="session_email"
+         name="session[email]" type="text" />
+  <label for="session_password">Password</label>
+  <input id="session_password" name="session[password]"
+         type="password" />
+  <input class="btn btn-primary" name="commit" type="submit"
+       value="Log in" />
+</form>
+
+8.6app/controllers/sessions_controller.rb
+Sessions 控制器中 create 动作的初始版本
+  def create
+    render 'new'
+  end
+
+8.7查找并验证用户
+  def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      # 登入用户，然后重定向到用户的资料页面
+    else
+      # 创建一个错误消息
+      render 'new'
+    end
+  end
+
+8.8尝试处理登录失败
+  def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      # 登入用户，然后重定向到用户的资料页面
+    else
+      flash[:danger] = 'Invalid email/password combination' # 不完全正确
+      render 'new'
+    end
+  end
 
 
 
