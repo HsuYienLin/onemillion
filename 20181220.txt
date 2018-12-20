@@ -1,0 +1,183 @@
+8.9test/integration/users_login_test.rb
+捕获继续显示闪现消息的测试
+
+8.10$ rails test test/integration/users_login_test.rb
+只运行一个测试文件
+
+8.11app/controllers/sessions_controller.rb
+处理登录失败正确的代码
+flash.now[:danger] = 'Invalid email/password combination'
+
+8.12rails test test/integration/users_login_test.rb
+rails test
+
+8.13app/controllers/application_controller.rb
+class ApplicationController < ActionController::Base
+  protect_from_forgery with: :exception
+  include SessionsHelper
+end
+
+8.14app/helpers/sessions_helper.rb
+定义log_in方法 只有session方法创建的临时cookie是这样，cookies方法创建的持久cookie则有可能会受到会话劫持（sessions hijacking）
+module SessionsHelper
+
+  # 登入指定的用户
+  def log_in(user)
+    session[:user_id] = user.id
+  end
+end
+
+8.15app/controllers/sessions_controller.rb
+登入用户
+def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      log_in user
+      redirect_to user
+    else
+      flash.now[:danger] = 'Invalid email/password combination'
+      render 'new'
+    end
+  end
+
+ 注重简洁的量定向代码 redirect_to user
+
+
+8.2.2当前用户
+current_user 方法可用于编写类似下面的代码：
+<%= current_user.name %>
+或者redirect_to current_user
+
+查找用户的方法之一是使用find方法，在用户资料页面
+User.find(session[:user_id])
+
+如果用户id不存在，find方法会抛出异常。
+但session[:user_id]的值经常是nil
+使用create动作中通过电子邮件地址查找用的find_by方法，通过id查找用户
+User.find_by(id: session[:user_id])
+
+定义current_user 方法：
+def current_user
+  if session[:user_id]
+    User.find_by(id: session[:user_id])
+  end
+end
+
+Ruby 习惯写法，把 User.find_by的结果存储在实例变量中，只在第一次调用时查询数据库，后续再调用直接返回实例变量中存储的值：
+if @current_user.nil?
+  @current_user = User.find_by(id: session[:user_id])
+else
+  @current_user
+end
+
+使用或||运算符
+@current_user = @current_user || User.find_by(id: session[:user_id])
+
+x = x + 1可以写成 x += 1
+x    =   x   *   3      ->     x     *=   3
+x    =   x   -   8      ->     x     -=   8
+x    =   x   /   2      ->     x     /=   2
+
+
+@foo =@foo||"bar"和@foo||="bar"是等效的
+@current_user = User.find_by(id: session[:user_id])
+也可以写成
+@current_user ||= User.find_by(id: session[:user_id])
+
+8.16app/helpers/sessions_helper.rb
+在会话中查找当前用户，添加
+# 返回当前登录的用户（如果有的话）
+  def current_user
+    if session[:user_id]
+      @current_user ||= User.find_by(id: session[:user_id])
+    end
+  end
+
+8.17在控制台中模拟session
+>> session = {}
+>> session[:user_id] = nil
+>> @current_user ||= User.find_by(id: session[:user_id])
+<What happens here?>
+>> session[:user_id]= User.first.id
+>> @current_user ||= User.find_by(id: session[:user_id])
+<What happens here?>
+>> @current_user ||= User.find_by(id: session[:user_id])
+<What happens here?>
+
+8.18app/helpers/sessions_helper.rb
+logged_in? 辅助方法
+添加  # 如果用户已登录，返回 true，否则返回 false
+  	def logged_in?
+    	!current_user.nil?
+  	end
+
+8.19app/views/layouts/_header.html.erb
+修改布局中的链接
+<header class="navbar navbar-fixed-top navbar-inverse">
+  <div class="container">
+    <%= link_to "sample app", root_path, id: "logo" %>
+    <nav>
+      <ul class="nav navbar-nav navbar-right">
+        <li><%= link_to "Home", root_path %></li>
+        <li><%= link_to "Help", help_path %></li>
+        <% if logged_in? %>
+          <li><%= link_to "Users", '#' %></li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              Account <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+              <li><%= link_to "Profile", current_user %></li>
+              <li><%= link_to "Settings", '#' %></li>
+              <li class="divider"></li>
+              <li>
+                <%= link_to "Log out", logout_path, method: :delete %>
+              </li>
+            </ul>
+          </li>
+        <% else %>
+          <li><%= link_to "Log in", login_path %></li>
+        <% end %>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+在布局中添加新链接之外，借助bootstrap实现了下拉菜单。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
