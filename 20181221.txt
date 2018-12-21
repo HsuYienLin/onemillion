@@ -1,0 +1,191 @@
+查看安全密码的源码后，生成摘要的方法：
+BCrypt::Password.create(string, cost: cost)
+string是计算hash值的字符串，cost是耗时因子，决定计算hash值时消耗的资源。耗时因子的值越大，由hash值破解出原密码的难度越大。这个值对生产环境的安全防护很重要，但在测试中digest方法的执行速度越快越好。安全密码的源码中还有这么一行：
+
+cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+																							BCrypt::Engine.cost
+它的作用是严格实现前面的分析：在测试中耗时因子使用最小值，在生产环境则使用普通（最大）值。
+
+8.21app/models/user.rb
+定义固件中要使用的 digest 方法 添加下列代码
+# 返回指定字符串的哈希摘要
+  def User.digest(string)
+    cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+                                                  BCrypt::Engine.cost
+    BCrypt::Password.create(string, cost: cost)
+  end
+
+8.22test/fixtures/users.yml
+测试用户登录所需的固件
+michael:
+  name: xyl Example
+  email: xyl.59@163.com
+  password_digest: <%= User.digest('password') %>
+
+固件中可以使用嵌入式 Ruby。因此，用<%= User.digest('password') %>生成测试用户正确的密码摘要。
+
+8.23test/integration/users_login_test.rb
+测试使用有效信息登录情况 添加
+def setup
+    @user = users(:xyl)
+end
+
+test "login with valid information" do
+    get login_path
+    post login_path, params: { session: { email:    @user.email,
+                                          password: 'password' } }
+    assert_redirected_to @user
+    follow_redirect!
+    assert_template 'users/show' 
+    assert_select "a[href=?]", login_path, count: 0
+    （确认页面中有零个登录链接，从而证实登录链接消失了）
+    assert_select "a[href=?]", logout_path
+    assert_select "a[href=?]", user_path(@user)
+  end
+使用 assert_redirected_to @user 检查重定向的地址是否正确；使用 follow_redirect! 访问重定向的目标地址
+count: 0 参数的目的是告诉 assert_select，我们期望页面中有零个匹配指定模式的链接。
+
+8.24 $ rails test test/integration/users_login_test.rb
+出错
+
+8.25app/controllers/users_controller.rb
+注册后登入用户
+def create
+  @user = User.new(user_params)
+  if @user.save
+    log_in @user
+    flash[:success] = "Welcome to the Sample App!"      
+    redirect_to @user
+   else
+    render 'new'
+end
+
+private
+
+    def user_params
+      params.require(:user).permit(:name, :email, :password,
+                                   :password_confirmation)
+    end
+end
+
+8.26test/test_helper.rb
+在测试中定义检查登录状态的方法，返回布尔值
+# 如果用户已登录，返回 true
+  def is_logged_in?
+    !session[:user_id].nil?
+  end
+
+8.27测试注册后有没有登入用户
+test/integration/users_signup_test.rb
+添加assert is_logged_in?
+
+8.28 rails test
+
+
+退出要撤销 log_in 从会话中删除用户的 ID 使用 delete 方法
+session.delete(:user_id)
+
+把 log_out 方法放在 Sessions 辅助模块中
+8.29app/helpers/sessions_helper.rb
+# 退出当前用户
+  def log_out
+    session.delete(:user_id)
+    @current_user = nil
+  end
+
+8.30在Sessions 控制器的 destroy 动作中调用 log_out 方法
+app/controllers/sessions_controller.rb
+消除会话
+def destroy
+  log_out
+  redirect_to root_url
+end
+
+8.31test/integration/users_login_test.rb
+测试用户退出功能
+require 'test_helper'
+
+class UsersLoginTest < ActionDispatch::IntegrationTest
+  .
+  .
+  .
+  test "login with valid information followed by logout" do
+    get login_path
+    post login_path, params: { session: { email:    @user.email,
+                                          password: 'password' } }
+    assert is_logged_in?
+    assert_redirected_to @user
+    follow_redirect!
+    assert_template 'users/show'
+    assert_select "a[href=?]", login_path, count: 0
+    assert_select "a[href=?]", logout_path
+    assert_select "a[href=?]", user_path(@user)
+    delete logout_path
+    assert_not is_logged_in?
+    assert_redirected_to root_url
+    follow_redirect!
+    assert_select "a[href=?]", login_path
+    assert_select "a[href=?]", logout_path,      count: 0
+    assert_select "a[href=?]", user_path(@user), count: 0
+  end
+end
+
+定义并测试了 destroy 动作之后，注册、登录和退出三大功能就都实现了
+
+8.32rails test
+
+把改动合并到主分支再推送到远程
+$ rails test
+$ git add -A
+$ git commit -m "Implement basic login"
+$ git checkout master
+$ git merge basic-login
+$ rails test
+$ git push
+
+总结
+Rails 使用 session 方法在临时 cookie 中维护页面之间的状态；
+
+登录表单的目的是创建新会话，登入用户；
+
+flash.now 方法用于在重新渲染的页面中显示闪现消息；
+
+在测试中重现问题时可以使用测试驱动开发；
+
+使用 session 方法可以安全地在浏览器中存储用户 ID，创建临时会话；
+
+可以根据登录状态修改功能，例如布局中显示的链接；
+
+集成测试可以检查路由、数据库更新和对布局的修改；
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
