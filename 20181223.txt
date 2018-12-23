@@ -1,0 +1,194 @@
+9.1db/migrate/[timestamp]_add_remember_digest_to_users.rb
+class AddRememberDigestToUsers < ActiveRecord::Migration[5.0]
+  def change
+    add_column :users, :remember_digest, :string
+  end
+end
+指定了属性（remember_digest）及其类型（string）
+
+
+
+Ruby 标准库中 SecureRandom 模块的 urlsafe_base64 
+这个方法返回长度为 22 的随机字符串，包含字符 A-Z、a-z、0-9、“-”和“_”（每一位都有 64 种可能，因此方法名中有“base64”）
+记忆令牌也没必要是唯一的，不过如果唯一的话，安全性更高。
+对 base64 字符串来说，22 个字符中的每一个都有 64 种取值可能，所以两个记忆令牌“碰撞”的几率小到可以忽略，只有 1/6422 = 2-132 ≈ 10-40。
+使用可在 URL 中安全使用的 base64字符串，还能在账户激活和密码重设链接中使用类似的令牌。
+
+
+定义一个 new_token 方法，用于创建新令牌。
+9.2app/models/user.rb
+# 返回一个随机令牌
+  def User.new_token
+    SecureRandom.urlsafe_base64
+  end
+通过 user.remember_token 获取令牌（为了存入 cookie），但又不在数据库中存储令牌。
+编写代码创建remember_token属性，方法是使用attr_accessor，创建一个可访问的属性
+
+9.3app/models/user.rb
+class User < ApplicationRecord
+  attr_accessor :remember_token
+  .
+  .
+  .
+ 	# 为了持久保存会话，在数据库中记住用户
+  def remember
+    self.remember_token = User.new_token
+    update_attribute(:remember_digest, User.digest(remember_token))
+  end
+end
+
+9.4
+# 返回指定字符串的哈希摘要
+  def self.digest(string)
+    cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+                                                  BCrypt::Engine.cost
+    BCrypt::Password.create(string, cost: cost)
+  end
+
+  # 返回一个随机令牌
+  def self.new_token
+    SecureRandom.urlsafe_base64
+  end
+
+9.5使用 class << self 定义生成令牌和摘要的方法
+class << self
+    # 返回指定字符串的哈希摘要
+    def digest(string)
+      cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+                                                    BCrypt::Engine.cost
+      BCrypt::Password.create(string, cost: cost)
+    end
+
+    # 返回一个随机令牌
+    def new_token
+      SecureRandom.urlsafe_base64
+    end
+  end
+
+
+定义好 user.remember 方法之后，可以创建持久会话了，方法：把（加密后的）用户 ID 和记忆令牌作为持久 cookie 存入浏览器
+使用 cookies 方法，和 session 一样，可以视为一个散列。一个 cookie 有两部分信息，一个是 value（值），一个是可选的 expires（过期日期）
+
+		cookies[:remember_token] = { value:   remember_token,
+                             expires: 20.years.from_now.utc }
+Rails 应用经常使用 20 年后过期的 cookie，所以 Rails 提供了一个特殊的方法 permanent，用于创建这种 cookie，所以上述代码可以简写为：
+		cookies.permanent[:remember_token] = remember_token
+这样rails会自动把过期时间设为20.years.from_now （cookie在此之后过期）
+
+
+把用户的 ID 存入 cookie：
+cookies[:user_id] = user.id
+这种方式存储的是纯文本，攻击者很容易窃取用户的账户。为了避免这种情况发生，要对 cookie 签名，存入浏览器之前安全加密 cookie：
+cookies.signed[:user_id] = user.id
+让用户 ID 和持久记忆令牌配对，所以也要持久存储用户，串联调用 signed 和 permanent 方法：
+cookies.permanent.signed[:user_id] = user.id
+存储 cookie 后，再访问页面时可以使用下面的代码检索用户：
+User.find_by(id: cookies.signed[:user_id])
+cookies.signed[:user_id] 会自动解密 cookie 中的用户 ID。然后，再使用 bcrypt 确认 cookies[:remember_token] 与9.3 生成的 remember_digest 是否匹配
+查看安全密码的源码
+BCrypt::Password.new(password_digest) == unencrypted_password
+需要的代码：BCrypt::Password.new(remember_digest) == remember_token
+实际等效于：BCrypt::Password.new(remember_digest).is_password?(remember_token)
+
+9.6在 User 模型中添加 authenticated? 方法
+app/models/user.rb
+	def authenticated?(remember_token)
+    BCrypt::Password.new(remember_digest).is_password?(remember_token)
+  end
+authenticated? 方法中的 remember_token 参数是方法内的局部变量
+还要注意 remember_digest 属性的写法，这与写成 self.remember_digest 的作用一样；self.remember_digest 调用的是方法
+
+在 log_in 后面调用 remember 辅助方法
+9.7app/controllers/sessions_controller.rb
+def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      log_in user
+      remember user   添加此行
+      redirect_to user
+    else
+      flash.now[:danger] = 'Invalid email/password combination'
+      render 'new'
+    end
+  end
+
+9.8app/helpers/sessions_helper.rb
+记住用户，新建一个文件
+module SessionsHelper
+
+  # 登入指定的用户
+  def log_in(user)
+    session[:user_id] = user.id
+  end
+
+  # 在持久会话中记住用户
+  def remember(user)
+    user.remember
+    cookies.permanent.signed[:user_id] = user.id
+    cookies.permanent[:remember_token] = user.remember_token
+  end
+
+  # 返回当前登录的用户（如果有的话）
+  def current_user
+    if session[:user_id]
+      @current_user ||= User.find_by(id: session[:user_id])
+    end
+  end
+
+  # 如果用户已登录，返回 true，否则返回 false
+  def logged_in?
+    !current_user.nil?
+  end
+
+  # 退出当前用户
+  def log_out
+    session.delete(:user_id)
+    @current_user = nil
+  end
+end
+
+如果临时会话中有 session[:user_id]，那么使用它检索用户；否则，应该检查 cookies[:user_id]，检索（并登入）持久会话中存储的用户
+更新 current_user 方法，支持持久会话
+9.9app/helpers/sessions_helper.rb
+# 返回 cookie 中记忆令牌对应的用户
+  def current_user
+    if (user_id = session[:user_id])
+      @current_user ||= User.find_by(id: user_id)
+    elsif (user_id = cookies.signed[:user_id])
+      user = User.find_by(id: user_id)
+      if user && user.authenticated?(cookies[:remember_token])
+        log_in user
+        @current_user = user
+      end
+    end
+  end
+
+然后rails test
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
