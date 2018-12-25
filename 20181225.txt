@@ -1,0 +1,20 @@
+Axure 快捷键
+添加网格 command+‘  
+快速复制 command+d或者按住command拖拽
+替换 command+h
+重做 command+y
+生成原型预览 f5
+生成原型文件 f8
+在原型中重新生成当前页面 command+f8
+对齐网格 command+shift+‘
+隐藏全局辅助线 command+.
+隐藏页面辅助线 command+，
+对齐辅助线 command+shift+，
+
+站点地图：功能菜单+页面
+用来规划软件功能菜单或结构
+使用者快速了解软件结构
+
+不要在随意新建页面
+页面命名要有意义
+并联协作可以同时进行设计
