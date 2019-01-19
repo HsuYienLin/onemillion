@@ -1,0 +1,442 @@
+10.1users控制器的edit动作
+app/controllers/users_controller.rb添加
+def edit
+    @user = User.find(params[:id])
+  end
+
+  private
+
+    def user_params
+      params.require(:user).permit(:name, :email, :password,
+                                   :password_confirmation)
+    end
+
+10.2用户编辑页面views
+users/edit.html.erb
+<% provide(:title, "Edit user") %>
+<h1>Update your profile</h1>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <%= form_for(@user) do |f| %>
+      <%= render 'shared/error_messages' %>
+
+      <%= f.label :name %>
+      <%= f.text_field :name, class: 'form-control' %>
+
+      <%= f.label :email %>
+      <%= f.email_field :email, class: 'form-control' %>
+
+      <%= f.label :password %>
+      <%= f.password_field :password, class: 'form-control' %>
+
+      <%= f.label :password_confirmation, "Confirmation" %>
+      <%= f.password_field :password_confirmation, class: 'form-control' %>
+
+      <%= f.submit "Save changes", class: "btn btn-primary" %>
+    <% end %>
+
+    <div class="gravatar_edit">
+      <%= gravatar_for @user %>
+      <a href="http://gravatar.com/emails" target="_blank">change</a>
+    </div>
+  </div>
+</div>
+用到创建error_messages局部视图
+修改 Gravatar 头像的链接用到了 target="_blank" 在新窗口中打开页面
+
+10.3定义的编辑表单生成的html
+<form accept-charset="UTF-8" action="/users/1" class="edit_user"
+      id="edit_user_1" method="post">
+  <input name="_method" type="hidden" value="patch" />
+  .
+  .
+  .
+</form>
+
+浏览器不支持patch请求 rails在post请求中使用这个隐藏字段伪装成patch请求
+
+10.4在网站布局中添加“settings”链接的地址
+app/views/layouts/_header.html.erb
+<header class="navbar navbar-fixed-top navbar-inverse">
+  <div class="container">
+    <%= link_to "sample app", root_path, id: "logo" %>
+    <nav>
+      <ul class="nav navbar-nav navbar-right">
+        <li><%= link_to "Home", root_path %></li>
+        <li><%= link_to "Help", help_path %></li>
+        <% if logged_in? %>
+          <li><%= link_to "Users", '#' %></li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              Account <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+              <li><%= link_to "Profile", current_user %></li>
+              <li><%= link_to "Settings", edit_user_path(current_user) %></li>
+              <li class="divider"></li>
+              <li>
+                <%= link_to "Log out", logout_path, method: :delete %>
+              </li>
+            </ul>
+          </li>
+        <% else %>
+          <li><%= link_to "Log in", login_path %></li>
+        <% end %>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+使用 target="_blank" 打开 URL 有个小安全隐患：打开的窗口获得了 HTML 文档对应的 window 对象
+
+10.5供注册用户和编辑用户表单使用的局部视图
+app/views/users/_form.html.erb
+<%= form_for(@user) do |f| %>
+  <%= render 'shared/error_messages', object: @user %>
+
+  <%= f.label :name %>
+  <%= f.text_field :name, class: 'form-control' %>
+
+  <%= f.label :email %>
+  <%= f.email_field :email, class: 'form-control' %>
+
+  <%= f.label :password %>
+  <%= f.password_field :password, class: 'form-control' %>
+
+  <%= f.label :password_confirmation %>
+  <%= f.password_field :password_confirmation, class: 'form-control' %>
+
+  <%= f.submit yield(:button_text), class: "btn btn-primary" %>
+<% end %>
+
+10.6在注册视图中使用局部视图
+app/views/users/new.html.erb
+<% provide(:title, 'Sign up') %>
+<% provide(:button_text, 'Create my account') %>
+<h1>Sign up</h1>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <%= render 'form' %>
+  </div>
+</div>
+
+10.7在视图中使用局部视图
+app/views/users/edit.html.erb
+<% provide(:title, 'Edit user') %>
+<% provide(:button_text, 'Save changes') %>
+<h1>Update your profile</h1>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <%= render 'form' %>
+    <div class="gravatar_edit">
+      <%= gravatar_for @user %>
+      <a href="http://gravatar.com/emails" target="_blank">Change</a>
+    </div>
+  </div>
+</div>
+
+10.8update动作的初始版本
+users_controller.rb
+def create
+    @user = User.new(user_params)
+    if @user.save
+      log_in @user
+      flash[:success] = "Welcome to the Sample App!"
+      redirect_to @user
+    else
+      render 'new'
+    end
+end
+
+def update
+    @user = User.find(params[:id])
+    if @user.update_attributes(user_params)
+      # 处理更新成功的情况
+    else
+      render 'edit'
+    end
+end
+调用 update_attributes 方法时指定的 user_params 参数，这是健壮参数（strong parameter），可以避免批量赋值带来的安全隐患
+
+10.9编辑失败的测试
+integration/users_edit_test.rb
+class UsersEditTest < ActionDispatch::IntegrationTest
+
+  def setup
+    @user = users(:michael)
+  end
+
+  test "unsuccessful edit" do
+    get edit_user_path(@user)
+    assert_template 'users/edit'
+    patch user_path(@user), params: { user: { name:  "",
+                                              email: "foo@invalid",
+                                              password:              "foo",
+                                              password_confirmation: "bar" } }
+
+    assert_template 'users/edit'
+  end
+end
+
+10.11编辑成功测试
+users_edit_test.rb
+test "successful edit" do
+    get edit_user_path(@user)
+    assert_template 'users/edit'
+    name  = "Foo Bar"
+    email = "foo@bar.com"
+    patch user_path(@user), params: { user: { name:  name,
+                                              email: email,
+                                              password:              "",
+                                              password_confirmation: "" } }
+    assert_not flash.empty?
+    assert_redirected_to @user
+    @user.reload
+    assert_equal name,  @user.name
+    assert_equal email, @user.email
+  end
+
+10.12users控制器的update动作
+def update
+    @user = User.find(params[:id])
+    if @user.update_attributes(user_params)
+      flash[:success] = "Profile updated"
+      redirect_to @user
+    else
+      render 'edit'
+    end
+end
+
+10.13更新时允许密码为空
+app/models/user.rb
+validates :password, presence: true, length: { minimum: 6 }, allow_nil: true
+创建对象时，has_secure_password 会执行存在性验证，捕获密码为 nil 的情况
+
+10.15添加logged_in_user 前置过滤器
+users_controller.rb
+class UsersController < ApplicationController
+  before_action :logged_in_user, only: [:edit, :update]
+  .
+  .
+  .
+  private
+
+    def user_params
+      params.require(:user).permit(:name, :email, :password,
+                                   :password_confirmation)
+    end
+
+    # 前置过滤器
+
+    # 确保用户已登录
+    def logged_in_user
+      unless logged_in?
+        flash[:danger] = "Please log in."
+        redirect_to login_url
+      end
+    end
+end
+
+10.17登入测试用户
+integration/users_edit_test.rb
+test "unsuccessful edit" do
+    log_in_as(@user)
+    get edit_user_path(@user)
+    .
+    .
+    .
+  end
+
+  test "successful edit" do
+    log_in_as(@user)
+    get edit_user_path(@user)
+    .
+    .
+    .
+  end
+
+10.19注释掉前置过滤器，测试安全防护措施
+users_controller.rb
+# before_action :logged_in_user, only: [:edit, :update]
+
+10.20测试edit和update动作是受保护的
+users_controller_test.rb
+ test "should redirect edit when not logged in" do
+    get edit_user_path(@user)
+    assert_not flash.empty?
+    assert_redirected_to login_url
+  end
+
+  test "should redirect update when not logged in" do
+    patch user_path(@user), params: { user: { name: @user.name,
+                                              email: @user.email } }
+    assert_not flash.empty?
+    assert_redirected_to login_url
+  end
+第二个测试使用patch方法向user_path(@user) 发送 PATCH 请求。
+
+10.21去掉注释
+
+10.23在固件文件中添加第二个用户
+test/fixtures/users.yml
+archer:
+  name: Sterling Archer
+  email: duchess@example.gov
+  password_digest: <%= User.digest('password') %>
+
+10.24尝试编辑其他用户资料的测试
+users_controller_test.rb
+def setup
+    @user       = users(:michael)
+    @other_user = users(:archer)
+  end
+
+10.25保护edit和update动作的correct_user前置过滤器 
+before_action :correct_user,   only: [:edit, :update]
+.
+.
+.
+# 确保是正确的用户
+    def correct_user
+      @user = User.find(params[:id])
+      redirect_to(root_url) unless @user == current_user
+    end
+
+10.27current_user?方法
+app/helpers/sessions_helper.rb
+放在持久会话中记住用户后面
+# 如果指定用户是当前用户，返回 true
+  def current_user?(user)
+    user == current_user
+  end
+
+10.28correct_user前置过滤器的最终版本
+app/controllers/users_controller.rb
+# 确保是正确的用户
+    def correct_user
+      @user = User.find(params[:id])
+      redirect_to(root_url) unless current_user?(@user)
+    end
+
+10.29测试友好的转向
+integration/users_edit_test.rb
+test "successful edit with friendly forwarding" do
+    get edit_user_path(@user)
+    log_in_as(@user)
+    assert_redirected_to edit_user_url(@user)
+
+10.30实现友好的转向
+sessions_helper.rb
+# 重定向到存储的地址或者默认地址
+  def redirect_back_or(default)
+    redirect_to(session[:forwarding_url] || default)
+    session.delete(:forwarding_url)
+  end
+
+  # 存储后面需要使用的地址
+  def store_location
+    session[:forwarding_url] = request.original_url if request.get?
+  end
+
+10.31把store_location方法添加到logged_in_user前置过滤器中
+users_controller.rb
+def logged_in_user
+      unless logged_in?
+        store_location
+        flash[:danger] = "Please log in."
+        redirect_to login_url
+      end
+end
+
+10.32加入友好转向后的create动作
+sessions_controller.rb
+redirect_back_or user
+
+10.34测试index动作的重定向
+users_controller_test.rb
+test "should redirect index when not logged in" do
+    get users_path
+    assert_redirected_to login_url
+end
+
+10.35-36访问index动作要先登录
+before_action :logged_in_user, only: [:index, :edit, :update]
+before_action :correct_user,   only: [:edit, :update]
+
+  def index
+  	@users = User.all     users控制器的index动作
+  end
+
+10.37用户列表视图
+app/views/users/index.html.erb
+<% provide(:title, 'All users') %>
+<h1>All users</h1>
+
+<ul class="users">
+  <% @users.each do |user| %>
+    <li>
+      <%= gravatar_for user, size: 50 %>
+      <%= link_to user.name, user %>
+    </li>
+  <% end %>
+</ul>
+
+10.38为gravatar_for辅助方法添加一个散列选项
+app/helpers/users_helper.rb
+module UsersHelper
+
+  # 返回指定用户的 Gravatar
+  def gravatar_for(user, options = { size: 80 })
+    gravatar_id = Digest::MD5::hexdigest(user.email.downcase)
+    size = options[:size]
+    gravatar_url = "https://secure.gravatar.com/avatar/#{gravatar_id}?s=#{size}"
+    image_tag(gravatar_url, alt: user.name, class: "gravatar")
+  end
+end
+
+10.39用户列表页面css
+app/assets/stylesheets/custom.scss
+.
+.
+/* Users index */
+
+.users {
+  list-style: none;
+  margin: 0;
+  li {
+    overflow: auto;
+    padding: 10px 0;
+    border-bottom: 1px solid $gray-lighter;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
