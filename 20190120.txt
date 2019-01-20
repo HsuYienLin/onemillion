@@ -1,0 +1,471 @@
+10.40添加用户列表页面的链接地址
+<% if logged_in? %>
+  <li><%= link_to "Users", users_path %></li>
+
+10.42在gemfile文件中加入faker gem
+gem 'faker',                   '1.7.3'
+
+10.43向数据库中添加示例用户的ruby代码
+db/seeds.rb
+User.create!(name:  "Example User",
+             email: "example@railstutorial.org",
+             password:              "foobar",
+             password_confirmation: "foobar")
+
+99.times do |n|
+  name  = Faker::Name.name
+  email = "example-#{n+1}@railstutorial.org"
+  password = "password"
+  User.create!(name:  name,
+               email: email,
+               password:              password,
+               password_confirmation: password)
+end
+首先使用现有用户的名字和电子邮件地址创建一个示例用户，然后创建 99 个示例用户
+create!方法和create方法的作用类似，只不过遇到无效数据时会抛出异常，而不是返回 false
+
+10.44在gemfile中加入will_paginate gem(faker后)
+gem 'bootstrap-will_paginate', '1.0.0'
+gem 'bootstrap-sass',          '3.3.7'
+
+10.45在index视图中加入分页
+app/views/users/index.html.erb
+<%= will_paginate %>
+
+<ul class="users">
+  <% @users.each do |user| %>
+    <li>
+      <%= gravatar_for user, size: 50 %>
+      <%= link_to user.name, user %>
+    </li>
+  <% end %>
+</ul>
+
+<%= will_paginate %>
+
+will_paginate方法在Users控制器的视图中，它会自动寻找名为@users的对象，然后显示一个分页导航链接
+
+$ rails console
+>> User.paginate(page: 1)
+paginate方法可以接受一个散列参数， ：page键的值指定显示第几页
+User.paginate 方法根据 :page 的值，一次取回一组用户（默认为 30 个）。所以，第一页显示的是第 1-30 个用户，第二页显示的是第 31-60 个用户
+如果 :page 的值为 nil，paginate 会显示第一页
+
+10.46在index动作中分页取回用户
+users_controller.rb
+def index
+    @users = User.paginate(page: params[:page])
+end
+
+10.47在固件中再创建30个用户
+test/fixtures/users.yml
+lana:
+  name: Lana Kane
+  email: hands@example.gov
+  password_digest: <%= User.digest('password') %>
+
+malory:
+  name: Malory Archer
+  email: boss@example.gov
+  password_digest: <%= User.digest('password') %>
+
+<% 30.times do |n| %>
+user_<%= n %>:
+  name:  <%= "User #{n}" %>
+  email: <%= "user-#{n}@example.com" %>
+  password_digest: <%= User.digest('password') %>
+<% end %>
+
+10.48用户列表及分页测试
+users_index_test.rb
+require 'test_helper'
+
+class UsersIndexTest < ActionDispatch::IntegrationTest
+
+  def setup
+    @user = users(:michael)
+  end
+
+  test "index including pagination" do
+    log_in_as(@user)
+    get users_path
+    assert_template 'users/index'
+    assert_select 'div.pagination'
+    User.paginate(page: 1).each do |user|
+      assert_select 'a[href=?]', user_path(user), text: user.name
+    end
+  end
+end
+
+10.50重构index视图
+index.html.erb
+<ul class="users">
+  <% @users.each do |user| %>
+    <%= render user %>
+  <% end %>
+</ul>
+
+10.51渲染单个用户的局部视图
+_user.html.erb
+<li>
+  <%= gravatar_for user, size: 50 %>
+  <%= link_to user.name, user %>
+</li>
+
+10.52完全重构后的index视图
+<ul class="users">
+  <%= render @users %>
+</ul>
+
+通过user模型中一个名为admin的属性来判断用户是否具有管理员权限
+admin属于布尔值 Active Record 会自动生成一个 admin? 布尔值方法，判断用户是否为管理员
+
+10.54向user模型中添加admin属性的迁移
+db/migrate/[timestamp]_add_admin_to_users.rb
+class AddAdminToUsers < ActiveRecord::Migration[5.0]
+  def change
+    add_column :users, :admin, :boolean, default: false
+  end
+end
+
+rails能自动识别admin属性的类型为布尔值，自动生成admin？方法
+$ rails console --sandbox
+>> user = User.first
+>> user.admin?
+
+10.55在种子数据中把第一个用户设为管理员
+db/seeds.rb
+User.create!(name:  "Example User",
+             email: "example@railstutorial.org",
+             password:              "foobar",
+             password_confirmation: "foobar",
+             admin: true)
+
+在初始化散列参数中指定了admin: true，把用户设为管理员。这么做的后果是，用户对象暴露在网络中了，如果在请求中提供初始化参数，恶意用户就可以发送如下的PATCH请求：
+patch /users/17?admin=1
+这个请求会把17号用户设为管理员——这是个严重的潜在安全隐患
+
+可以使用健壮参数实现这一限制，即在 params 散列上调用 require 和 permit 方法：
+
+    def user_params
+      params.require(:user).permit(:name, :email, :password,
+                                   :password_confirmation)
+    end
+
+10.56测试禁止修改admin属性
+test/controllers/users_controller_test.rb
+test "should not allow the admin attribute to be edited via the web" do
+    log_in_as(@other_user)
+    assert_not @other_user.admin?
+    patch user_path(@other_user), params: {
+                                    user: { password:              FILL_IN,
+                                            password_confirmation: FILL_IN,
+                                            admin: FILL_IN } }
+    assert_not @other_user.FILL_IN.admin?
+  end
+
+10.57删除用户的链接（管理员可见）
+_user.html.erb
+<% if current_user.admin? && !current_user?(user) %>
+    | <%= link_to "delete", user, method: :delete,
+                                  data: { confirm: "You sure?" } %>
+<% end %>
+
+10.58添加destroy动作
+app/controllers/users_controller.rb
+before_action :logged_in_user, only: [:index, :edit, :update, :destroy]
+
+def destroy
+    User.find(params[:id]).destroy     find方法和destroy方法连在一起调用，只占用了一行
+    flash[:success] = "User deleted"
+    redirect_to users_url
+end
+
+10.59限制只有管理员才能访问destroy动作的前置过滤器
+users_controller.rb
+before_action :admin_user,     only: :destroy
+
+# 确保是管理员
+    def admin_user
+      redirect_to(root_url) unless current_user.admin?
+    end
+
+10.60把固件中的一个用户设置为管理员
+test/fixtures/users.yml
+admin: true
+
+10.61测试只有管理员能访问的动作
+users_controller_test.rb
+test "should redirect destroy when not logged in" do
+    assert_no_difference 'User.count' do
+      delete user_path(@user)
+    end
+    assert_redirected_to login_url
+  end
+
+  test "should redirect destroy when logged in as a non-admin" do
+    log_in_as(@other_user)
+    assert_no_difference 'User.count' do
+      delete user_path(@user)
+    end
+    assert_redirected_to root_url
+  end
+
+10.62删除链接和删除用户操作的集成测试
+users_index_test.rb
+require 'test_helper'
+
+class UsersIndexTest < ActionDispatch::IntegrationTest
+
+  def setup
+    @admin     = users(:michael)
+    @non_admin = users(:archer)
+  end
+
+  test "index as admin including pagination and delete links" do
+    log_in_as(@admin)
+    get users_path
+    assert_template 'users/index'
+    assert_select 'div.pagination'
+    first_page_of_users = User.paginate(page: 1)
+    first_page_of_users.each do |user|
+      assert_select 'a[href=?]', user_path(user), text: user.name
+      unless user == @admin
+        assert_select 'a[href=?]', user_path(user), text: 'delete'
+      end
+    end
+    assert_difference 'User.count', -1 do
+      delete user_path(@non_admin)
+    end
+  end
+
+  test "index as non-admin" do
+    log_in_as(@non_admin)
+    get users_path
+    assert_select 'a', text: 'delete', count: 0
+  end
+end
+检查了每个用户旁都有删除链接，而且如果用户是管理员，就不做这个检查
+
+----------------------------------------------------- 
+                     完成第10章！
+                    第11章激活账户
+-----------------------------------------------------
+
+11.1为AccountActivations控制器的 edit 动作添加路由
+config/routes.rb
+resources :account_activations, only: [:edit]
+
+在命令行中指定了要添加的三个属性：
+$ rails generate migration add_activation_to_users \
+> activation_digest:string activated:boolean activated_at:datetime
+
+11.2添加账户激活所需属性的迁移
+db/migrate/[timestamp]_add_activation_to_users.rb
+add_column :users, :activated, :boolean, default: false
+
+在用户存入数据库之前把电子邮件地址转换成小写形式，使用的是before_save回调和downcase方法
+before_save回调在保存对象之前，包括创建对象和更新对象时自动调用
+
+11.3在user模型中添加账户激活相关的代码
+app/models/user.rb
+class User < ApplicationRecord
+  attr_accessor :remember_token, :activation_token
+  before_save   :downcase_email
+  before_create :create_activation_digest
+  validates :name,  presence: true, length: { maximum: 50 }
+  .
+  .
+  .
+  private
+
+    # 把电子邮件地址转换成小写
+    def downcase_email
+      self.email = email.downcase
+    end
+
+    # 创建并赋值激活令牌和摘要
+    def create_activation_digest
+      self.activation_token  = User.new_token
+      self.activation_digest = User.digest(activation_token)
+    end
+end
+
+11.4激活种子数据中的用户
+db/seeds.rb
+User.create!(name:  "Example User",
+             email: "example@railstutorial.org",
+             password:              "foobar",
+             password_confirmation: "foobar",
+             admin:     true,
+             activated: true,
+             activated_at: Time.zone.now)
+
+99.times do |n|
+  name  = Faker::Name.name
+  email = "example-#{n+1}@railstutorial.org"
+  password = "password"
+  User.create!(name:  name,
+              email: email,
+              password:              password,
+              password_confirmation: password,
+              activated: true,
+              activated_at: Time.zone.now)
+end
+
+11.5激活固件中的用户
+test/fixtures/users.yml
+activated: true
+activated_at: <%= Time.zone.now %>
+
+11.6生成User邮件程序
+$ rails generate mailer UserMailer account_activation password_reset
+
+自动生成的：
+11.7生成的账户激活邮件视图 纯文本格式
+app/views/user_mailer/account_activation.text.erb
+11.8生成的账户激活邮件视图 HTML格式
+app/views/user_mailer/account_activation.html.erb
+11.9生成的Application邮件程序
+app/mailers/application_mailer.rb
+11.10生成的User邮件程序
+app/mailers/user_mailer.rb
+
+11.11在Application邮件程序中设定默认的发件人地址
+app/mailers/application_mailer.rb
+default改为
+default from: "noreply@example.com"
+
+11.12发送账户激活链接
+user_mariler.rb
+def account_activation(user)
+  @user = user
+  mail to: user.email, subject: "Account activation"
+end
+
+在邮件程序的视图中也可以使用嵌入式Ruby
+
+11.13账户激活邮件纯文本视图
+app/views/user_mailer/account_activation.text.erb
+Hi <%= @user.name %>,
+
+Welcome to the Sample App! Click on the link below to activate your account:
+
+<%= edit_account_activation_url(@user.activation_token, email: @user.email) %>
+
+11.14账户激活邮件的HTML视图
+app/views/user_mailer/account_activation.html.erb
+<h1>Sample App</h1>
+
+<p>Hi <%= @user.name %>,</p>
+
+<p>
+Welcome to the Sample App! Click on the link below to activate your account:
+</p>
+
+<%= link_to "Activate", edit_account_activation_url(@user.activation_token,
+                                                    email: @user.email) %>
+
+11.15使用 CGI.escape 方法转义电子邮件地址
+>> CGI.escape('foo@example.com')
+=> "foo%40example.com"
+
+11.16开发环境中的邮件设置
+config/environments/development.rb
+config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.delivery_method = :test
+  host = 'example.com' # 不要原封不动使用这个域名，
+                       # 应该使用你本地的开发主机地址
+  # 在云端 IDE 中使用这一行
+  config.action_mailer.default_url_options = { host: host, protocol: 'https' }
+  # 在本地设备中使用这一行
+  # config.action_mailer.default_url_options = { host: host, protocol: 'http' }
+
+11.17生成的User邮件预览程序
+11.18预览账户激活邮件所需的方法
+test/mailers/previews/user_mailer_preview.rb
+def account_activation
+    user = User.first
+    user.activation_token = User.new_token
+    UserMailer.account_activation(user)
+  end
+
+11.19rails为user邮件程序生成的测试
+11.20测试当前的电子邮件实现
+user_mailer_test.rb
+test "account_activation" do
+    user = users(:michael)
+    user.activation_token = User.new_token
+    mail = UserMailer.account_activation(user)
+    assert_equal "Account activation", mail.subject
+    assert_equal [user.email], mail.to
+    assert_equal ["noreply@example.com"], mail.from
+    assert_match user.name,               mail.body.encoded
+    assert_match user.activation_token,   mail.body.encoded
+    assert_match CGI.escape(user.email),  mail.body.encoded
+end
+删除生成的密码重设测试
+
+11.21设定测试环境的主机地址
+config/environments/test.rb
+config.action_mailer.delivery_method = :test
+  config.action_mailer.default_url_options = { host: 'example.com' }
+
+rails test:mailers
+
+11.23在注册过程中添加账户激活
+app/controllers/users_controller.rb
+def create
+    @user = User.new(user_params)
+    if @user.save
+      UserMailer.account_activation(@user).deliver_now
+      flash[:info] = "Please check your email to activate your account."
+      redirect_to root_url
+    else
+      render 'new'
+    end
+  end
+
+11.24临时注释掉失败的测试
+test/integration/users_signup_test.rb
+# assert_template 'users/show'
+# assert is_logged_in?
+
+使用authenticated?方法检查账户激活的摘要和指定的令牌是否匹配
+authenticated?方法是专门用来验证记忆令牌的
+使用的解决方法涉及到元编程（metaprogramming），即用程序编写程序。（元编程是Ruby最强大的功能之一,Rails中很多“神奇”的功能都是通过元编程实现的。）
+$ rails console
+>> a = [1, 2, 3]
+>> a.length
+=> 3
+>> a.send(:length)
+=> 3
+>> a.send("length")
+=> 3
+把:length符号或者'length'字符串传给send方法的作用与在对象上直接调用length方法的作用一样
+
+定义一个attribute变量，其值为符号:activation，然后使用字符串插值构建传给send方法的参数,attribute变量的值使用字符串 'activation' 也行，不过符号更便利。不管使用什么，插值后，"#{attribute}_digest" 的结果都是 "activation_digest"。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
